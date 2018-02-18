@@ -29,7 +29,7 @@ def mnozi_to_bre(prev_kernel, bias, kernel, index, first):
 
 def generate_inputs(index, weight_file_path):
     """
-    Generates optimal inputs for a selected class, pased on h5 file
+    Generates optimal inputs for a selected class, based on h5 file
 
     Args:
       weight_file_path (str) : Path to the file to analyze
@@ -49,7 +49,7 @@ def generate_inputs(index, weight_file_path):
         first = True
         glob = 0
         svejedno = True
-        for layer, g in f.items():
+        for layer, g in reversed(f.items()):
             print("  {}".format(layer))
             print("    Attributes:")
             for key, value in g.attrs.items():
@@ -90,3 +90,46 @@ def generate_inputs(index, weight_file_path):
         write_as_img(img)
     finally:
         f.close()
+
+ 
+def save_results(prev_kernel, glob):
+    img = []
+    img2 = []
+    
+    for red in prev_kernel:
+        temp = sum(red)
+        img2.append(temp)
+        if temp > 0:
+            img.append(255)
+        else:
+            img.append(0)
+      
+    with open('zero_or_max' + str(glob) + '.txt', 'w') as the_file:
+        for number_in_img in img:
+            the_file.write(str(number_in_img) + ", ")
+                
+    with open('raw_values' + str(glob) + '.txt', 'w') as the_file:
+        for number_in_img in img2:
+            the_file.write(str(number_in_img) + ", ")
+    
+    
+    #write_as_img(img)
+    glob = glob + 1
+    
+
+
+def write_as_img(pixel_values):
+    blank_image = np.zeros((32,32,3), np.uint8)
+    i = 0
+    for red in blank_image:
+        for kolona in red:
+            for index in range(0, 3):
+                kolona[index] = pixel_values[i]
+                i = i+1
+    cv2.imwrite("output.png", blank_image)
+    
+      
+      
+if __name__ == "__main__":
+
+    generate_inputs(0, "end_result.h5")

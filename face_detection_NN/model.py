@@ -15,7 +15,7 @@ def getInstance():
     model.add(Activation("softmax"))
     
     print("[INFO] loading weights...")
-    model.load_weights('end_result.h5')
+    model.load_weights('face_detection_NN/end_result.h5')
     return model
     
 def dimensions():

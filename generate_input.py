@@ -6,30 +6,38 @@ import numpy as np
 import io
 import cv2
 from numpy import array
+import math
 
 
-
-def mnozi_to_bre(prev_kernel, bias, kernel, index, first):
+def mnozi_to_bre(prev_kernel, kernel, index, first, prev_minus):
     retval = np.zeros((len(kernel),len(kernel[0])))
-    for i in range(0, len(bias)):
+    minus = np.zeros((len(kernel),len(kernel[0])))
+    for i in range(0, len(kernel[0])):
         
-        multip = bias[i]* 10000
+        multip = 0
+        minus_value = 0
         if(first):
-            multip = multip* prev_kernel[i][index]
+            multip = prev_kernel[i][index]
+            minus_value = prev_minus[i][index]
         else:
             for j in range(0, len(prev_kernel[i])):
-                multip = multip* prev_kernel[i][j]* 100
-                
+                multip += prev_kernel[i][j]
+                minus_value += prev_minus[i][j]
         
         
         for j in range(0, len(kernel)):
-            retval[j][i] = kernel[j][i]*multip
-           
-    return retval
+            if(kernel[j][i] > 0):
+                retval[j][i] = math.log(kernel[j][i]) + multip
+                minus[j][i] = minus_value
+            else:
+                retval[j][i] = math.log(kernel[j][i]*(-1)) + multip
+                minus[j][i] = minus_value + 1
+            
+    return retval, minus
 
 def generate_inputs(index, weight_file_path):
     """
-    Generates optimal inputs for a selected class, pased on h5 file
+    Generates optimal inputs for a selected class, based on h5 file
 
     Args:
       weight_file_path (str) : Path to the file to analyze
@@ -46,6 +54,7 @@ def generate_inputs(index, weight_file_path):
         if len(f.items())==0:
             return 	
         prev_kernel = None
+        prev_minus = None
         first = True
         glob = 0
         svejedno = True
@@ -60,33 +69,52 @@ def generate_inputs(index, weight_file_path):
             for p_name in g.keys():
                 param = g[p_name]
                 subkeys = param.keys()
-                if("bias" in param.keys() and "kernel" in param.keys()):
-                    bias = param.get("bias")
+                if("kernel" in param.keys()):
                     kernel = param.get("kernel")
                     if(svejedno == True):
                         svejedno = False
                         prev_kernel = np.zeros((len(kernel),len(kernel[0])))
+                        prev_minus = np.zeros((len(kernel),len(kernel[0])))
                         print(kernel)
                         for red in range(0, len(kernel)):
-                            prev_kernel[red][index] = kernel[red][index]* bias[index]
+                            if(kernel[red][index] > 0):
+                                prev_kernel[red][index] = math.log(kernel[red][index])
+                                prev_minus[red][index] = 0
+                            else:
+                                prev_kernel[red][index] = math.log(kernel[red][index]*(-1))
+                                prev_minus[red][index] = 1
                     else:
                         print("herkules")
-                        prev_kernel = mnozi_to_bre(prev_kernel, bias, kernel, index, first)
+                        prev_kernel, prev_minus = mnozi_to_bre(prev_kernel, kernel, index, first, prev_minus)
                         first = False
             save_results(prev_kernel , glob)
             glob = glob + 1
             
+        
         img = []
         img2 = []
-    
-        for red in prev_kernel:
-            temp = sum(red)
+        print("keut")
+        for i in range(0, len(prev_kernel)):
+            temp = 0
+            for j in range(0, len(prev_kernel[i])):
+                if(prev_kernel[i][j]%2 == 0):
+                    temp += math.exp(prev_kernel[i][j]+2000000) #Mnozi sve sa e^2000000
+                else:
+                    temp += (-1)*math.exp(prev_kernel[i][j])
             img2.append(temp)
             if temp > 0:
                 img.append(255)
             else:
                 img.append(0)
-    
+        
+        with open('zero_or_max.txt', 'w') as the_file:
+            for number_in_img in img:
+                the_file.write(str(number_in_img) + ", ")
+                
+        with open('raw_values.txt', 'w') as the_file:
+            for number_in_img in img2:
+                the_file.write(str(number_in_img) + ", ")
+                
         write_as_img(img)
     finally:
         f.close()
@@ -119,17 +147,17 @@ def save_results(prev_kernel, glob):
 
 
 def write_as_img(pixel_values):
-    blank_image = np.zeros((32,32,3), np.uint8)
+    blank_image = np.zeros((28,28,3), np.uint8)
     i = 0
     for red in blank_image:
         for kolona in red:
             for index in range(0, 3):
                 kolona[index] = pixel_values[i]
-                i = i+1
+            i = i+1
     cv2.imwrite("output.png", blank_image)
     
       
       
 if __name__ == "__main__":
 
-    generate_inputs(0, "end_result.h5")
+    generate_inputs(0, "digits_NN/end_result_new.h5")

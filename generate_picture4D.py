@@ -22,44 +22,34 @@ from keras.callbacks import ModelCheckpoint
 def save_img(data, path):
     if(RGB == 3):
         new_image = np.ones((HEIGHT,WIDTH,RGB), np.uint8)
-        iterator = 0
         for i in range(0, HEIGHT):
             for j in range(0, WIDTH):
                 for k in range(0, RGB):
-                    new_image[i][j][k] = data[iterator]*255
-                    iterator = iterator + 1
+                    new_image[i][j][k] = data[i][j][k]*255
         cv2.imwrite(path, new_image)
     else:
         new_image = np.ones((HEIGHT,WIDTH,3), np.uint8)
-        iterator = 0
         for i in range(0, HEIGHT):
             for j in range(0, WIDTH):
                 for k in range(0, 3):
-                    new_image[i][j][k] = data[iterator]*255
-                iterator = iterator + 1
+                    new_image[i][j][k] = data[i][j][0]*255
         cv2.imwrite(path, new_image)
 
 def genetic(data, current_maxes, model):
-    print("MAXES")
-    print(current_maxes)
-    for j in range(0, WIDTH*RGB):
+    for j in range(0, WIDTH):
         for i in range(0, HEIGHT):
-            data[i][i*WIDTH*RGB+j] = 0
+            for k in range(0, RGB):
+                data[i][i][j][k] = 0
         lista = model.predict(data,batch_size=HEIGHT,verbose=0)
         for i in range(0,HEIGHT):
             
             if lista[i][CLASS] > current_maxes[i]:
                 print("BETTER")
                 current_maxes[i] = lista[i][CLASS]
-                if current_maxes[i] > 0.9:
-                    print(i*WIDTH*RGB+j)
-                    print(i, j)
-                    #save_img(data[i], "kurcina")
             else:
                 print("WORSE")
-                data[i][i*WIDTH*RGB+j] = 1
+                data[i][i][j][k] = 1
         print(str(j) + ". iteration over")
-    
     return data
 
 HEIGHT = 28
@@ -71,7 +61,7 @@ def image_to_feature_vector(image, size=(HEIGHT, WIDTH)):
 	# a list of raw pixel intensities
 	return cv2.resize(image, size).flatten()
 
-CLASS = 8
+CLASS = 9
 
 if __name__ == '__main__':
     model = getInstance()
@@ -79,7 +69,7 @@ if __name__ == '__main__':
     
     blank_image = np.ones((HEIGHT,WIDTH,RGB), np.uint8)
     data = []
-    features = image_to_feature_vector(blank_image, (HEIGHT, WIDTH))
+    features = blank_image
     data.append(features)
             
     data = np.array(data) #/ 255.0
@@ -90,21 +80,17 @@ if __name__ == '__main__':
     data = []
     current_maxes = []
     for i in range(0, HEIGHT):
-        data.append(image_to_feature_vector(np.ones((HEIGHT,WIDTH,RGB), np.uint8), (HEIGHT, WIDTH)))
+        data.append(np.ones((HEIGHT,WIDTH,RGB), np.uint8))
         current_maxes.append(basic_value)
 
     data = np.array(data)
         
     retval = genetic(data, current_maxes, model)    
-    result = []
-    for red in data:
-        
-        if(result == []):
-            result = red
-        else:
-            result = red + result
-
-    result = result - (HEIGHT - 1)
+    result = np.ones((HEIGHT,WIDTH,RGB), np.uint8)
+    for i in range(0, HEIGHT):
+        result[i] = data[i][i]
+    
+    print(result)
     
     data = []
     data.append(result)
@@ -114,4 +100,3 @@ if __name__ == '__main__':
     print (lista[0][CLASS])
     
     save_img(result, "result" + str(CLASS) +".png")
-
