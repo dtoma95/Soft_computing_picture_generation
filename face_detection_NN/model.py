@@ -19,4 +19,4 @@ def getInstance():
     return model
     
 def dimensions():
-    return 32, 32
+    return 32, 32, 3

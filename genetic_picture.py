@@ -3,7 +3,7 @@
 
 
 # import the neural network
-from digits_CNN.model import *
+from Landmarks_nn.model import *
 
 # import the necessary packages
 
@@ -44,10 +44,10 @@ def genetic(data, current_maxes, model):
     print(current_maxes)
     for j in range(0, WIDTH*RGB):
         for i in range(0, HEIGHT):
-            data[i][i*WIDTH*RGB+j] = 0
+            data[i][i*WIDTH*RGB+j] = 1
         lista = model.predict(data,batch_size=HEIGHT,verbose=0)
         for i in range(0,HEIGHT):
-            
+            print(lista[i])
             if lista[i][CLASS] > current_maxes[i]:
                 print("BETTER")
                 current_maxes[i] = lista[i][CLASS]
@@ -57,13 +57,13 @@ def genetic(data, current_maxes, model):
                     #save_img(data[i], "kurcina")
             else:
                 print("WORSE")
-                data[i][i*WIDTH*RGB+j] = 1
+                data[i][i*WIDTH*RGB+j] = 0
         print(str(j) + ". iteration over")
     
     return data
 
-HEIGHT = 28
-WIDTH = 28
+HEIGHT = 105
+WIDTH = 32
 RGB = 1
     
 def image_to_feature_vector(image, size=(HEIGHT, WIDTH)):
@@ -71,13 +71,13 @@ def image_to_feature_vector(image, size=(HEIGHT, WIDTH)):
 	# a list of raw pixel intensities
 	return cv2.resize(image, size).flatten()
 
-CLASS = 8
+CLASS = 2
 
 if __name__ == '__main__':
     model = getInstance()
     HEIGHT, WIDTH, RGB = dimensions()
     
-    blank_image = np.ones((HEIGHT,WIDTH,RGB), np.uint8)
+    blank_image = np.zeros((HEIGHT,WIDTH,RGB), np.uint8)
     data = []
     features = image_to_feature_vector(blank_image, (HEIGHT, WIDTH))
     data.append(features)
@@ -90,7 +90,7 @@ if __name__ == '__main__':
     data = []
     current_maxes = []
     for i in range(0, HEIGHT):
-        data.append(image_to_feature_vector(np.ones((HEIGHT,WIDTH,RGB), np.uint8), (HEIGHT, WIDTH)))
+        data.append(image_to_feature_vector(np.zeros((HEIGHT,WIDTH,RGB), np.uint8), (HEIGHT, WIDTH)))
         current_maxes.append(basic_value)
 
     data = np.array(data)
@@ -103,8 +103,8 @@ if __name__ == '__main__':
             result = red
         else:
             result = red + result
-
-    result = result - (HEIGHT - 1)
+    #print(result)
+    #result = result - (HEIGHT - 1)
     
     data = []
     data.append(result)
